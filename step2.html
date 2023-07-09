@@ -1,0 +1,307 @@
+<!DOCTYPE html>
+<html lang="ja">
+
+<!--
+  
+-->
+
+<head>
+  <title>ReactCDN</title>
+  <meta charset="utf-8">
+  <meta name="viewport" content="initail-scale=1, width=device-width">
+  <script src="https://unpkg.com/react@18/umd/react.development.js" crossorigin="anonymous"></script>
+  <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+  <script src="https://unpkg.com/@mui/material@latest/umd/material-ui.development.js" crossorigin="anonymous"></script>
+  <script src='https://unpkg.com/react-router-dom@5/umd/react-router-dom.min.js'></script>
+  <script src="https://cdn.jsdelivr.net/npm/react-hook-form@7/dist/index.umd.min.js"></script>
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js" crossorigin="anonymous"></script>
+  <script src="./src/store/template.js"></script>
+  <script src="./src/store/mock.js"></script>
+  <script src="./src/store/index.js"></script>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,400,500,700&display=swap" />
+  <link rel="stylesheet" href="https://fonts.googleapis.com/icon?family=Material+Icons">
+</head>
+
+<body>
+  <div id="app"></div>
+
+  <script type="text/babel">
+
+    function Login() {
+      return <h1>Login</h1>
+    }
+
+
+    function NTextField(props) {
+      const { Controller } = ReactHookForm
+      const { Grid, TextField, Typography } = MaterialUI
+      const { item, config, control, rules } = props
+      return (
+        <Grid container sx={{ py: 2 }}>
+          <Grid item xs={4}>
+            <Typography variant="body1">{item.name}</Typography>
+          </Grid>
+          <Grid item xs={4}>
+            <Controller
+              name={item.key}
+              control={control}
+              rules={rules.name}
+              render={({ field, fieldState }) => (
+                <TextField fullWidth
+                  size="small"
+                  label={item.name}
+                  value={config[item.key]}
+                  error={fieldState.invalid}
+                  helperText={fieldState.error?.message}
+                  {...field}
+                />
+              )}
+            />
+          </Grid>
+        </Grid>
+      )
+    }
+
+    function NSwitch(props) {
+      const { Controller } = ReactHookForm
+      const { Grid, Switch, Typography } = MaterialUI
+      const { item, config, control, rules } = props
+      return (
+        <Grid container sx={{ py: 2 }}>
+          <Grid item xs={4}>
+            <Typography variant="body1">{item.name}</Typography>
+          </Grid>
+          <Grid item xs={4}>
+            <Controller
+              name={item.key}
+              control={control}
+              render={({ field }) => (
+                <Switch
+                  size="small"
+                  onChange={(e) => field.onChange(e.target.checked)}
+                  checked={field.value} />
+              )}
+            />
+          </Grid>
+        </Grid>
+      )
+    }
+
+    function NSelect(props) {
+      const { Controller } = ReactHookForm
+      const { Grid, Select, FormControl, MenuItem, InputLabel, Typography } = MaterialUI
+      const { item, config, control, rules } = props
+      return (
+        <Grid container sx={{ py: 2 }}>
+          <Grid item xs={4}>
+            <Typography variant="body1">{item.name}</Typography>
+          </Grid>
+          <Grid item xs={4}>
+            <Controller
+              name={item.key}
+              control={control}
+              render={({ field }) => (
+                <FormControl fullWidth>
+                  <InputLabel id={item.key + "l"}>{item.name}</InputLabel>
+                  <Select labelId={item.key + "l"} id={item.key} label={item.name} size="small" value={config[item.key]} fullWidth {...field} >
+                    {item.items.map((mi) => (
+                      <MenuItem key={mi.text} value={mi.value}>{mi.text} </MenuItem>
+                    ))}
+                  </Select>
+                </FormControl>
+              )}
+            />
+          </Grid>
+        </Grid>
+      )
+    }
+
+    function Common(props) {
+      const { useState, Fragment } = React
+      const { useForm, Controller } = ReactHookForm
+      const { Card, CardHeader, CardContent, CardActions, Button, Typography } = MaterialUI
+      const { FormControl, Checkbox } = MaterialUI
+      const { page } = props
+      const [t, SetTemplate] = useState(template.pages[page])
+      const [c, SetConfig] = useState(mock.config[page])
+
+      const defaultValues = {}
+      for (const section of t.sections) {
+        for (const item of section.items) {
+          defaultValues[item.key] = c[item.key]
+        }
+      }
+      const { control, handleSubmit } = useForm({ defaultValues })
+
+      const onSubmit = data => console.log(data)
+      const onCancel = data => console.log("cancel")
+
+      const validationRules = {
+        name: {
+          required: '名前を入力してください。',
+          minLength: { value: 4, message: '4文字以上で入力してください。' }
+        }
+      }
+      return (
+        <Card>
+          <CardHeader title={page} titleTypographyProps={{ variant: "h3" }} subheader="text" />
+          <form onSubmit={handleSubmit(onSubmit)}>
+            <CardContent>
+              {t.sections.map((section) => (
+                <Fragment key={section.section_name}>
+                  <Typography variant="h5" sx={{ fontWeight: 'bold' }}>{section.section_name}</Typography>
+                  {section.items.map((item) => (
+                    <Fragment key={item.name}>
+                      {item.type === 'text' &&
+                        <NTextField item={item} config={c} control={control} rules={validationRules} />
+                      }
+                      {item.type === 'switch' &&
+                        <NSwitch item={item} config={c} control={control} rules={validationRules} />
+                      }
+                      {item.type === 'select' &&
+                        <NSelect item={item} config={c} control={control} rules={validationRules} />
+                      }
+                      {item.type === 'checkbox' &&
+                        <Controller
+                          name={item.key}
+                          control={control}
+                          rules={{ required: true }}
+                          render={({ field }) => <Checkbox {...field} />}
+                        />
+                      }
+                    </Fragment>
+                  ))}
+                </Fragment>
+              ))}
+            </CardContent>
+            <CardActions>
+              <Button variant="contained" type="submit">
+                設定
+              </Button>
+              <Button variant="contained" color="inherit" onClick={() => onCancel()}>
+                キャンセル
+              </Button>
+            </CardActions>
+          </form>
+        </Card>
+      )
+    }
+
+    function Layout({ children }) {
+      const { Link } = ReactRouterDOM
+      const { AppBar, Toolbar, Divider, Box, Drawer, Card, List, ListItem, ListItemIcon, ListItemButton, ListItemText, Typography, Icon } = MaterialUI
+
+      const categories = [
+        {
+          id: 'Sample',
+          children: [
+            { id: 'General', icon: 'dashboard', to: '/general' },
+            { id: 'Wifi', icon: 'wifi', to: '/wifi24g' },
+          ],
+        },
+      ];
+      const drawerWidth = 240
+
+      return (
+        <>
+          <Box sx={{ display: 'flex' }}>
+            {/*
+            <AppBar position="fixed" sx={{ zIndex: (theme) => theme.zIndex.drawer + 1 }}>
+              <Toolbar>
+                <Typography variant="h6" noWrap component="div">
+                  Clipped drawer
+                </Typography>
+              </Toolbar>
+            </AppBar>
+            */}
+            <Drawer
+              variant="permanent"
+              sx={{
+                width: drawerWidth,
+                flexShrink: 0,
+                [`& .MuiDrawer-paper`]: { width: drawerWidth, boxSizing: 'border-box' },
+              }}
+            >
+              <Box sx={{ overflow: 'auto' }}>
+                <List disablePadding>
+                  <ListItem sx={{ fontSize: 22 }}>
+                    ConfigTemplate
+                  </ListItem>
+                  <ListItem component={Link} to={'/'}>
+                    <ListItemIcon>
+                      <Icon>home</Icon>
+                    </ListItemIcon>
+                    <ListItemText>Home</ListItemText>
+                  </ListItem>
+                  {categories.map(({ id, children }) => (
+                    <Box key={id}>
+                      <ListItem sx={{ py: 2, px: 3 }}>
+                        <ListItemText >{id}</ListItemText>
+                      </ListItem>
+                      {
+                        children.map(({ id: childId, icon, to, active }) => (
+                          <ListItem disablePadding key={childId}>
+                            <ListItemButton component={Link} to={to} selected={active}>
+                              <ListItemIcon><Icon>{icon}</Icon></ListItemIcon>
+                              <ListItemText>{childId}</ListItemText>
+                            </ListItemButton>
+                          </ListItem>
+                        ))
+                      }
+                      < Divider sx={{ mt: 2 }} />
+                    </Box>
+                  ))}
+                </List>
+              </Box>
+            </Drawer >
+            <Box component="main" sx={{ flexGrow: 1, p: 3 }}>
+
+              {children}
+            </Box>            </Box >
+
+        </>
+      )
+    }
+    const App = () => {
+      const { HashRouter, Switch, Link, Route } = ReactRouterDOM
+      const { createTheme, ThemeProvider, CssBaseline } = MaterialUI
+
+      let theme = createTheme({
+        palette: {
+          primary: {
+            light: '#63ccff',
+            main: '#009be5',
+            dark: '#006db3',
+          },
+          background: {
+            default: '#f5f5f5',
+          },
+        }
+      })
+
+      return (
+        <>
+          <ThemeProvider theme={theme}>
+            <CssBaseline />
+            <HashRouter>
+              <Switch>
+                <Route path='/:path?' exact>
+                  <Layout>
+                    <Route path="/" exact component={Login} />
+                    <Route path="/general" exact render={() => <Common page="general" />} />
+                    <Route path="/wifi24g" exact render={() => <Common page="wifi24g" />} />
+                  </Layout>
+                </Route>
+              </Switch>
+            </HashRouter>
+          </ThemeProvider>
+        </>
+      )
+    }
+    const container = document.getElementById('app')
+    const root = ReactDOM.createRoot(container)
+    root.render(<App />)
+  </script>
+</body>
+
+</html>
